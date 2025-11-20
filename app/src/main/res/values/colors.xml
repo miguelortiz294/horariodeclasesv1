@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Paleta de colores profesional (Grafito / Azul Pizarra) -->
+    <color name="colorPrimary">#2c3e50</color> <!-- Grafito Oscuro -->
+    <color name="colorPrimaryDark">#2c3e50</color> <!-- Mismo color para la barra de estado -->
+    <color name="colorAccent">#34495e</color> <!-- Grafito Claro -->
+
+    <!-- Colores de fondo y texto -->
+    <color name="colorBackground">#ecf0f1</color> <!-- Un gris muy claro, casi blanco -->
+    <color name="colorCard">#ffffff</color> <!-- Blanco puro para las tarjetas -->
+    <color name="colorText">#2c3e50</color> <!-- Grafito oscuro para texto principal -->
+    <color name="colorTextSecondary">#7f8c8d</color> <!-- Gris suave para texto secundario -->
+
+    <!-- Colores base -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>
