@@ -2,6 +2,7 @@ package com.tuapp.horariodeclases.modelo;
 
 public class Ramo {
 
+    private String id; // Agregado: id del documento Firestore
     private int codigo;
     private String nombre;
     private String profesor;
@@ -20,6 +21,15 @@ public class Ramo {
         this.dia = dia;
         this.horaInicio = horaInicio;
         this.horaFin = horaFin;
+    }
+
+    // Agregado: getter/setter para id de Firestore
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     // GETTERS & SETTERS

@@ -1,22 +1,22 @@
 package com.tuapp.horariodeclases;
 
 import android.content.Intent;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class VerActivity extends AppCompatActivity {
 
     private TextView verProfesor, verSala, verDia, verHoraInicio, verHoraFin;
-    private DBHelper db;
-    private int codigo;
+    private FirebaseFirestore db; // Cambiado: Firestore en lugar de DBHelper
+    private String codigo; // Cambiado: id del documento Firestore
     private String nombreRamo;
 
     @Override
@@ -26,10 +26,12 @@ public class VerActivity extends AppCompatActivity {
 
         Toolbar toolbar = findViewById(R.id.toolbar_ver);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
 
-        db = new DBHelper(this);
-        codigo = getIntent().getIntExtra("codigo", -1);
+        db = FirebaseFirestore.getInstance(); // Agregado
+        codigo = getIntent().getStringExtra("codigo"); // Cambiado: id Firestore
 
         verProfesor = findViewById(R.id.ver_profesor);
         verSala = findViewById(R.id.ver_sala);
@@ -39,28 +41,44 @@ public class VerActivity extends AppCompatActivity {
     }
 
     private void cargarDatos() {
-        if (codigo == -1) return;
+        if (codigo == null || codigo.isEmpty()) {
+            Toast.makeText(this, "No se encontró el identificador del ramo", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
-        Cursor c = db.ver(codigo);
-        if (c.moveToFirst()) {
-            nombreRamo = c.getString(c.getColumnIndexOrThrow("NOMBRE"));
-            String profesor = c.getString(c.getColumnIndexOrThrow("PROFESOR"));
-            String sala = c.getString(c.getColumnIndexOrThrow("SALA"));
-            String dia = c.getString(c.getColumnIndexOrThrow("DIA"));
-            String horaInicio = c.getString(c.getColumnIndexOrThrow("HORA_INICIO"));
-            String horaFin = c.getString(c.getColumnIndexOrThrow("HORA_FIN"));
+        db.collection("ramos")
+                .document(codigo)
+                .get()
+                .addOnSuccessListener(this::mostrarDatos)
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error al cargar el ramo", Toast.LENGTH_SHORT).show();
+                    finish();
+                });
+    }
 
-            getSupportActionBar().setTitle(nombreRamo);
-            verProfesor.setText("Profesor: " + profesor);
-            verSala.setText("Sala: " + sala);
-            verDia.setText("Día: " + dia);
-            verHoraInicio.setText("Hora Inicio: " + horaInicio);
-            verHoraFin.setText("Hora Fin: " + horaFin);
-
-        } else {
+    private void mostrarDatos(DocumentSnapshot document) {
+        if (!document.exists()) {
             Toast.makeText(this, "El ramo ya no existe", Toast.LENGTH_SHORT).show();
             finish();
+            return;
         }
+
+        nombreRamo = document.getString("nombre");
+        String profesor = document.getString("profesor");
+        String sala = document.getString("sala");
+        String dia = document.getString("dia");
+        String horaInicio = document.getString("horaInicio");
+        String horaFin = document.getString("horaFin");
+
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle(nombreRamo);
+        }
+        verProfesor.setText("Profesor: " + (profesor != null ? profesor : ""));
+        verSala.setText("Sala: " + (sala != null ? sala : ""));
+        verDia.setText("Día: " + (dia != null ? dia : ""));
+        verHoraInicio.setText("Hora Inicio: " + (horaInicio != null ? horaInicio : ""));
+        verHoraFin.setText("Hora Fin: " + (horaFin != null ? horaFin : ""));
     }
 
     @Override
@@ -78,7 +96,7 @@ public class VerActivity extends AppCompatActivity {
             return true;
         } else if (id == R.id.menu_editar) {
             Intent i = new Intent(this, EditarActivity.class);
-            i.putExtra("codigo", codigo);
+            i.putExtra("codigo", codigo); // Cambiado: pasamos id Firestore
             startActivity(i);
             return true;
         } else if (id == R.id.menu_eliminar) {
@@ -93,22 +111,29 @@ public class VerActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle("Eliminar Ramo")
                 .setMessage("¿Estás seguro de que quieres eliminar '" + nombreRamo + "'?")
-                .setPositiveButton("Sí, eliminar", (dialog, which) -> {
-                    boolean ok = db.eliminar(codigo);
-                    if (ok) {
-                        Toast.makeText(this, "Ramo eliminado", Toast.LENGTH_SHORT).show();
-                        finish();
-                    } else {
-                        Toast.makeText(this, "Error al eliminar", Toast.LENGTH_SHORT).show();
-                    }
-                })
+                .setPositiveButton("Sí, eliminar", (dialog, which) -> eliminarRamo()) // Cambiado: elimina en Firestore
                 .setNegativeButton("Cancelar", null)
                 .show();
+    }
+
+    private void eliminarRamo() {
+        if (codigo == null || codigo.isEmpty()) {
+            Toast.makeText(this, "Id inválido", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        db.collection("ramos")
+                .document(codigo)
+                .delete()
+                .addOnSuccessListener(unused -> {
+                    Toast.makeText(this, "Ramo eliminado", Toast.LENGTH_SHORT).show();
+                    finish();
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Error al eliminar", Toast.LENGTH_SHORT).show());
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        cargarDatos();
+        cargarDatos(); // Cambiado: lectura desde Firestore
     }
 }
